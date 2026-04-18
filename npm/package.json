@@ -1,0 +1,21 @@
+{
+  "name": "branch-watch",
+  "version": "0.1.0",
+  "description": "Track branch and fork sync status across your GitHub repositories",
+  "keywords": ["github", "git", "branch", "fork", "cli"],
+  "homepage": "https://github.com/nuri-yoo/branch-watch",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nuri-yoo/branch-watch.git"
+  },
+  "license": "MIT",
+  "bin": {
+    "bw": "bin/bw.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

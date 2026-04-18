@@ -47,8 +47,7 @@ $ bw branches owner/repo
 ### Homebrew (macOS / Linux)
 
 ```sh
-brew tap nuri-yoo/tap
-brew install branch-watch
+brew install nuri-yoo/tap/branch-watch
 ```
 
 ### pip

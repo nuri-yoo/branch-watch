@@ -108,7 +108,7 @@ Download from the [releases page](https://github.com/nuri-yoo/branch-watch/relea
 
 | Platform | Binary |
 |----------|--------|
-| macOS Apple Silicon (M1/M2/M3) | `branch-watch-*-aarch64-apple-darwin.tar.gz` |
+| macOS Apple Silicon (M1/M2/M3/M4/M5) | `branch-watch-*-aarch64-apple-darwin.tar.gz` |
 | macOS Intel | `branch-watch-*-x86_64-apple-darwin.tar.gz` |
 | Linux x86_64 | `branch-watch-*-x86_64-unknown-linux-gnu.tar.gz` |
 | Linux ARM64 | `branch-watch-*-aarch64-unknown-linux-gnu.tar.gz` |

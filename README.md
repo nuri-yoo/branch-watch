@@ -129,6 +129,13 @@ $ bw branches owner/repo --json | jq '.[] | select(.behind > 10)'
 
 ## Installation
 
+### GitHub CLI extension
+
+```sh
+gh extension install nuri-yoo/gh-branch-watch
+gh branch-watch forks
+```
+
 ### Homebrew — recommended for macOS and Linux
 
 ```sh

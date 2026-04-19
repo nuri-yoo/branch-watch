@@ -1,6 +1,6 @@
 {
   "name": "branch-watch",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Track branch and fork sync status across your GitHub repositories",
   "keywords": ["github", "git", "branch", "fork", "cli"],
   "homepage": "https://github.com/nuri-yoo/branch-watch",

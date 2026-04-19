@@ -1,28 +1,61 @@
 use anyhow::Result;
 use colored::Colorize;
+use futures::future::join_all;
 use indicatif::{ProgressBar, ProgressStyle};
 use octocrab::Octocrab;
 use serde_json::{json, Value};
 
+use crate::config;
 use crate::github::{compare_branches, default_branch};
 
-pub async fn run(client: &Octocrab, repo: &str, behind_only: bool, output_json: bool) -> Result<()> {
+pub async fn run(
+    client: &Octocrab,
+    repo: &str,
+    behind_only: bool,
+    output_json: bool,
+    base_override: Option<&str>,
+) -> Result<()> {
+    let cfg = config::load()?;
     let (owner, name) = parse_repo(repo)?;
-    let base = default_branch(client, owner, name).await?;
 
-    let branches: Value = client
-        .get(
-            format!("/repos/{owner}/{name}/branches?per_page=100"),
-            None::<&()>,
-        )
-        .await?;
+    // Check if this repo is in the ignore list
+    let full_repo = format!("{owner}/{name}");
+    if cfg.ignore.iter().any(|ig| ig == &full_repo) {
+        println!("Repository '{full_repo}' is in the ignore list.");
+        return Ok(());
+    }
 
-    let empty = vec![];
-    let branch_names: Vec<String> = branches
-        .as_array()
-        .unwrap_or(&empty)
-        .iter()
-        .filter_map(|b| b["name"].as_str().map(str::to_string))
+    let base = match base_override {
+        Some(b) => b.to_string(),
+        None => default_branch(client, owner, name).await?,
+    };
+
+    let mut all_branches: Vec<String> = vec![];
+    let mut page: u32 = 1;
+    loop {
+        let branches: Value = client
+            .get(
+                format!("/repos/{owner}/{name}/branches?per_page=100&page={page}"),
+                None::<&()>,
+            )
+            .await?;
+
+        let batch: Vec<String> = branches
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .filter_map(|b| b["name"].as_str().map(str::to_string))
+            .collect();
+
+        if batch.is_empty() {
+            break;
+        }
+        all_branches.extend(batch);
+        page += 1;
+    }
+
+    let branch_names: Vec<String> = all_branches
+        .into_iter()
         .filter(|b| b != &base)
         .collect();
 
@@ -38,14 +71,27 @@ pub async fn run(client: &Octocrab, repo: &str, behind_only: bool, output_json: 
             .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"),
     );
 
-    let mut rows: Vec<(String, u64, u64)> = vec![];
-    for branch in &branch_names {
-        pb.set_message(branch.to_string());
-        let cmp = compare_branches(client, owner, name, &base, branch).await?;
-        rows.push((branch.clone(), cmp.behind, cmp.ahead));
-        pb.inc(1);
-    }
+    let futures: Vec<_> = branch_names
+        .iter()
+        .map(|branch| {
+            let pb = pb.clone();
+            let base = base.clone();
+            async move {
+                pb.set_message(branch.to_string());
+                let cmp = compare_branches(client, owner, name, &base, branch).await;
+                pb.inc(1);
+                cmp.map(|c| (branch.clone(), c.behind, c.ahead))
+            }
+        })
+        .collect();
+
+    let results = join_all(futures).await;
     pb.finish_and_clear();
+
+    let mut rows: Vec<(String, u64, u64)> = vec![];
+    for res in results {
+        rows.push(res?);
+    }
 
     // sort by behind descending, then ahead descending
     rows.sort_by(|a, b| b.1.cmp(&a.1).then(b.2.cmp(&a.2)));

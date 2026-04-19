@@ -29,14 +29,13 @@ branch-watch solves all three with a single command.
 
 ---
 
-## What's New in v0.2.0
+## What's New in v0.3.0
 
-- **`--behind-only` filter** — show only branches or forks that are actually behind; skip the noise
-- **`--json` output** — pipe results into `jq`, scripts, or CI steps
-- **gh CLI token auto-detection** — if you already have `gh` installed and authenticated, `bw` just works with no extra setup
-- **PR age display** — each PR now shows its open date so you can spot staleness at a glance
-- **Sorted by staleness** — branches and forks are ranked by how many commits behind they are, worst first
-- **Clearer auth errors** — expired token, wrong scope, and missing token all give actionable error messages
+- **Parallel API calls** — fork and branch comparisons now run concurrently; dramatically faster on large repos
+- **Pagination** — `bw forks` now fetches all forks even if you have more than 100
+- **`bw branches --base <branch>`** — compare branches against any branch, not just the default
+- **`bw forks --org <org>`** — check fork sync status for an entire GitHub organization
+- **`bw ignore`** — hide specific repositories from all output with `bw ignore add/remove/list`
 
 ---
 
@@ -121,6 +120,9 @@ $ bw branches owner/repo --json | jq '.[] | select(.behind > 10)'
 | GitHub Actions support | Use as a CI step to fail builds on stale branches |
 | Multi-platform | macOS (Intel + Apple Silicon), Linux (x86_64 + ARM64) |
 | Single binary | No runtime, no dependencies — written in Rust |
+| Ignore list | Hide specific repos from all output with `bw ignore add` |
+| Org support | Check fork sync for an entire GitHub org with `bw forks --org` |
+| Custom base branch | Compare branches against any ref, not just the default |
 | Token-based auth | Works with GitHub PAT via env var, config file, or gh CLI |
 
 ---
@@ -214,9 +216,10 @@ Lists all repositories you have forked and compares each one to its upstream def
 
 ```sh
 bw forks
-bw forks --behind-only          # show only stale forks
-bw forks --json                 # machine-readable output
-bw forks --behind-only --json   # combine flags
+bw forks --behind-only             # show only stale forks
+bw forks --json                    # machine-readable output
+bw forks --org <org>               # check forks in an organization
+bw forks --org <org> --behind-only # combine flags
 ```
 
 **When to use**: After returning from vacation, before syncing forks, or when maintaining many open-source forks simultaneously.
@@ -228,6 +231,7 @@ Shows the sync status of every branch in a repository relative to the default br
 ```sh
 bw branches owner/repo
 bw branches owner/repo --behind-only
+bw branches owner/repo --base develop   # compare against a specific branch
 bw branches owner/repo --json
 ```
 
@@ -248,6 +252,16 @@ bw prs owner/repo --json
 
 ```sh
 bw auth <token>
+```
+
+### `bw ignore` — hide repositories from output
+
+Add noisy or irrelevant repositories to an ignore list so they never appear in `bw forks` or `bw branches` output.
+
+```sh
+bw ignore add owner/repo      # hide a repository
+bw ignore remove owner/repo   # unhide a repository
+bw ignore list                # show all ignored repositories
 ```
 
 ---
@@ -286,8 +300,8 @@ branch-watch uses [semantic versioning](https://semver.org). When a `v*` tag is 
 To release a new version:
 
 ```sh
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
 Everything else is automated.
@@ -332,6 +346,7 @@ branch-watch integrates with the following GitHub REST API endpoints:
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
 | `GET` | `/user/repos?type=fork` | List authenticated user's forked repositories |
+| `GET` | `/orgs/{org}/repos?type=fork` | List an organization's forked repositories |
 | `GET` | `/repos/{owner}/{repo}` | Fetch repository metadata and upstream parent |
 | `GET` | `/repos/{owner}/{repo}/branches` | List all branches |
 | `GET` | `/repos/{owner}/{repo}/compare/{base}...{head}` | Get ahead/behind commit counts |

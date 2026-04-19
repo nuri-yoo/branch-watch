@@ -7,6 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 
+If you find this useful, consider leaving a ⭐ — it helps others discover the project.
+
 ![branch-watch demo](https://github.com/nuri-yoo/branch-watch/blob/main/demo2.gif?raw=true)
 
 **branch-watch** (`bw`) is a fast, single-binary CLI tool that tells you — at a glance — whether your GitHub branches are behind `main`, how far your forks have drifted from upstream, and what pull requests are open. No browser required. Powered by the GitHub REST API.

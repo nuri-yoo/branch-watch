@@ -1,5 +1,5 @@
 name: 'branch-watch'
-description: 'Check branch and fork sync status in your CI pipeline'
+description: 'Check if branches or forks are behind their upstream — surface drift before it becomes a merge conflict'
 author: 'nuri-yoo'
 
 branding:
@@ -12,13 +12,22 @@ inputs:
     required: false
     default: ${{ github.token }}
   command:
-    description: 'Command to run: branches, forks, or prs'
+    description: 'Command to run: branches | forks | prs'
     required: false
     default: 'branches'
   repo:
     description: 'Target repository in owner/name format (defaults to current repo)'
     required: false
     default: ${{ github.repository }}
+  behind_only:
+    description: 'Only show branches or forks that are behind (true/false)'
+    required: false
+    default: 'false'
+
+outputs:
+  result:
+    description: 'JSON output from branch-watch (requires --json flag)'
+    value: ${{ steps.run.outputs.result }}
 
 runs:
   using: 'composite'
@@ -35,7 +44,16 @@ runs:
         sudo mv bw /usr/local/bin/bw
 
     - name: Run branch-watch
+      id: run
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
-      run: bw ${{ inputs.command }} ${{ inputs.repo }}
+      run: |
+        ARGS="${{ inputs.command }} ${{ inputs.repo }}"
+        if [[ "${{ inputs.behind_only }}" == "true" ]]; then
+          ARGS="$ARGS --behind-only"
+        fi
+        result=$(bw $ARGS --json 2>/dev/null || bw $ARGS)
+        echo "result=$result" >> $GITHUB_OUTPUT
+        bw $ARGS
+
